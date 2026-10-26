@@ -2,7 +2,7 @@
 
 Turn plain screenshots into polished mockups: gradient / mesh / solid / transparent backgrounds, soft shadows, rounded corners, tilt, captions and Mac, Windows, browser or phone frames. Everything renders on a `<canvas>` in the user's browser; nothing is uploaded.
 
-**Live:** https://__SITE_URL__/ (placeholder – replaced after deploy)
+**Live:** https://shotstudio-tool.vercel.app/ (placeholder – replaced after deploy)
 
 ## Features
 
@@ -52,7 +52,7 @@ No build step. Open the printed URL.
 Deploy the folder as a static site on Vercel (`vercel --prod`). After the first deploy, replace the placeholder everywhere:
 
 ```bash
-sed -i 's/__SITE_URL__/shotstudio-tool.vercel.app/g' index.html privacy.html terms.html robots.txt sitemap.xml config.js README.md
+sed -i 's/shotstudio-tool.vercel.app/shotstudio-tool.vercel.app/g' index.html privacy.html terms.html robots.txt sitemap.xml config.js README.md
 ```
 
 Then run `node _shared/apply-brand.js screenshot-studio` from the repo root to inject the shared header, hero, footer and lead card.
