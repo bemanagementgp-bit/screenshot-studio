@@ -41,8 +41,20 @@
     captionOn: false, title: '', subtitle: '', captionPos: 'above', fontSize: 36, textColor: '#ffffff', align: 'center'
   };
   const S = Studio.restore(STATE_KEY, DEF);
-  // sanitize restored values
-  Object.keys(DEF).forEach(k => { if (typeof S[k] !== typeof DEF[k]) S[k] = DEF[k]; });
+  // Restored state / presets are untrusted (localStorage): enforce types, enums, ranges and lengths.
+  const HEX = /^#[0-9a-f]{6}$/i;
+  const ENUMS = { frame: ['none', 'mac', 'win', 'browser', 'phone'], frameTheme: ['auto', 'light', 'dark'], ratio: ['auto', '16:9', '4:3', '1:1', '4:5', '9:16'], captionPos: ['above', 'below'], align: ['left', 'center', 'right'] };
+  const RANGES = { bgAngle: [0, 360], pad: [0, 200], radius: [0, 48], shadow: [0, 100], shadowY: [0, 80], scale: [50, 100], tilt: [-15, 15], inset: [0, 8], fontSize: [16, 96] };
+  function sanitizeState(o) {
+    Object.keys(DEF).forEach(k => { if (typeof o[k] !== typeof DEF[k]) o[k] = DEF[k]; });
+    ['bgA', 'bgB', 'insetColor', 'textColor'].forEach(k => { if (!HEX.test(o[k])) o[k] = DEF[k]; });
+    Object.keys(ENUMS).forEach(k => { if (!ENUMS[k].includes(o[k])) o[k] = DEF[k]; });
+    Object.keys(RANGES).forEach(k => { o[k] = Number.isFinite(o[k]) ? clamp(o[k], RANGES[k][0], RANGES[k][1]) : DEF[k]; });
+    o.url = o.url.slice(0, 300); o.title = o.title.slice(0, 300); o.subtitle = o.subtitle.slice(0, 500);
+    if (!BG.some(b => b.id === o.bg)) o.bg = DEF.bg;
+    return o;
+  }
+  sanitizeState(S);
   if (!bgById(S.bg) || (bgById(S.bg).pro && !isPro())) S.bg = 'sunset';
 
   // ---------- images ----------
@@ -411,7 +423,12 @@
 
   // ---------- presets ----------
   const STYLE_KEYS = Object.keys(DEF).filter(k => !['title', 'subtitle', 'url'].includes(k));
-  function loadPresets() { try { return JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]'); } catch (e) { return []; } }
+  function loadPresets() {
+    const v = Studio.safeParse(localStorage.getItem(PRESETS_KEY) || '[]', []);
+    if (!Array.isArray(v)) return [];
+    return v.filter(p => p && typeof p === 'object' && p.style && typeof p.style === 'object').slice(0, 200)
+      .map(p => ({ name: String(p.name == null ? '' : p.name).slice(0, 60), style: sanitizeState(Studio.safeAssign({}, DEF, p.style)) }));
+  }
   function savePresets(p) { try { localStorage.setItem(PRESETS_KEY, JSON.stringify(p)); } catch (e) {} }
   function renderPresets() {
     const list = $('presetList'), ps = loadPresets(); list.innerHTML = '';
@@ -431,14 +448,15 @@
     $('presetHint').textContent = isPro() ? ps.length + ' saved preset' + (ps.length === 1 ? '' : 's') + ' · unlimited with Pro' : 'Free: 1 saved preset · Pro: unlimited';
   }
   function applyPreset(style) {
-    STYLE_KEYS.forEach(k => { if (k in style && typeof style[k] === typeof DEF[k]) S[k] = style[k]; });
+    STYLE_KEYS.forEach(k => { if (Object.prototype.hasOwnProperty.call(style, k) && typeof style[k] === typeof DEF[k]) S[k] = style[k]; });
+    sanitizeState(S);
     if (bgById(S.bg).pro && !isPro()) S.bg = 'sunset';
     syncAll(); update();
   }
   function savePreset() {
     const ps = loadPresets();
     if (!isPro() && ps.length >= 1) { openPro('presets'); return; }
-    let name = $('presetName').value.trim() || ('Style ' + (ps.length + 1));
+    let name = $('presetName').value.trim().slice(0, 60) || ('Style ' + (ps.length + 1));
     const style = {}; STYLE_KEYS.forEach(k => style[k] = S[k]);
     ps.push({ name, style }); savePresets(ps); $('presetName').value = ''; renderPresets(); toast('Preset saved'); track('preset_save', {});
   }
@@ -463,6 +481,8 @@
     const take = isPro() ? files.slice(0, 50) : files.slice(0, 1);
     const loaded = [];
     for (const f of take) {
+      // Size cap (100 MB) so a huge file can't freeze the tab.
+      if (f.size > 100 * 1024 * 1024) { toast('Could not read ' + f.name); continue; }
       try { const img = await Studio.readImage(f); loaded.push({ img, name: f.name, lum: luminance(img) }); }
       catch (e) { toast('Could not read ' + f.name + (/heic|heif/i.test(f.name) ? ' (HEIC is not supported by browsers)' : '')); }
     }
@@ -476,7 +496,7 @@
     const has = items.length > 0;
     drop.classList.toggle('has-image', has);
     $('srcInfo').innerHTML = has
-      ? `<b>${items[current].name}</b> · ${items[current].img.width} × ${items[current].img.height}px${items.length > 1 ? ' · ' + items.length + ' loaded' : ''}`
+      ? `<b>${bmEsc(items[current].name)}</b> · ${items[current].img.width} × ${items[current].img.height}px${items.length > 1 ? ' · ' + items.length + ' loaded' : ''}`
       : 'Showing the <b>built-in sample</b>. Drop your own screenshot to replace it.';
     const list = $('batchList'); list.innerHTML = '';
     if (items.length > 1) items.forEach((it, i) => {
