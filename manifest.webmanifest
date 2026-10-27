@@ -1,0 +1,35 @@
+{
+  "name": "Screenshot Studio – Be Management Tools",
+  "short_name": "Screenshot",
+  "description": "Drop a screenshot and get a polished mockup with a gradient background, soft shadow, rounded corners and a browser or device frame. Export PNG in seconds.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f0f10",
+  "theme_color": "#f97316",
+  "lang": "en",
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
