@@ -280,5 +280,17 @@
   "Output:": "Salida:",
   "Screenshot Studio": "Screenshot Studio",
   "Screenshot mockups": "Mockups de capturas",
-  "Transparent": "Transparente"
+  "Transparent": "Transparente",
+  "Image": "Imagen",
+  "Choose image…": "Elegir imagen…",
+  "No image chosen": "Ninguna imagen elegida",
+  "Blur": "Desenfoque",
+  "Your photo or wallpaper fills the canvas (cover fit). It stays on your device.": "Tu foto o fondo de pantalla cubre todo el canvas (ajuste de cobertura). No sale de tu dispositivo.",
+  "Background image": "Imagen de fondo",
+  "Platform size": "Tamaño por plataforma",
+  "Image backgrounds are Pro. Preview freely, upgrade to export.": "Los fondos con imagen son Pro: pruébalos libremente y pásate a Pro para exportar.",
+  "Image backgrounds are a Pro feature": "Los fondos con imagen son una función Pro",
+  "X / Twitter": "X / Twitter",
+  "LinkedIn": "LinkedIn",
+  "Product Hunt": "Product Hunt"
 }

@@ -280,5 +280,17 @@
   "Screenshot Studio": "Screenshot Studio",
   "Screenshot mockups": "Mockups de capturas de tela",
   "Transparent": "Transparente",
-  "t freeze the tab. if (f.size > 100 * 1024 * 1024) { toast(": "t freeze the tab. if (f.size > 100 * 1024 * 1024) { toast("
+  "t freeze the tab. if (f.size > 100 * 1024 * 1024) { toast(": "t freeze the tab. if (f.size > 100 * 1024 * 1024) { toast(",
+  "Image": "Imagem",
+  "Choose image…": "Escolher imagem…",
+  "No image chosen": "Nenhuma imagem escolhida",
+  "Blur": "Desfoque",
+  "Your photo or wallpaper fills the canvas (cover fit). It stays on your device.": "Sua foto ou papel de parede preenche todo o canvas (ajuste de cobertura). Ela não sai do seu dispositivo.",
+  "Background image": "Imagem de fundo",
+  "Platform size": "Tamanho por plataforma",
+  "Image backgrounds are Pro. Preview freely, upgrade to export.": "Fundos com imagem são Pro: visualize à vontade e faça upgrade para exportar.",
+  "Image backgrounds are a Pro feature": "Fundos com imagem são um recurso Pro",
+  "X / Twitter": "X / Twitter",
+  "LinkedIn": "LinkedIn",
+  "Product Hunt": "Product Hunt"
 }

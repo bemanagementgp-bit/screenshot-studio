@@ -361,6 +361,10 @@ h1,h2{letter-spacing:-.045em;font-weight:700}
 .tile .sw.checker{background:var(--checker),var(--bg2)}
 .tile .pro-badge{position:absolute;top:6px;right:6px;z-index:2;margin:0;font-size:.58rem;padding:2px 5px}
 .tile.locked{opacity:.85}
+.bg-image{margin-top:12px}
+.bg-image .src-row{align-items:center;flex-wrap:nowrap;margin-bottom:4px}
+.bg-image .src-row .btn{flex-shrink:0}
+.bg-image .bg-file-name{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .custom-grad{display:grid;grid-template-columns:52px 52px 1fr;gap:8px;align-items:center;margin-top:12px}
 .custom-grad .ctl{grid-column:1/-1;margin:4px 0 0}
 .ctl label{margin:0;font-size:.82rem;color:var(--text-2)}

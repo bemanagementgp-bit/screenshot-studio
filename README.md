@@ -10,7 +10,7 @@ Turn plain screenshots into polished mockups: gradient / mesh / solid / transpar
 - Drop / pick / paste a screenshot (PNG, JPG, WebP, GIF first frame, BMP). A built-in sample app window is shown until an image is loaded.
 - 12 background presets (Sunset, Ocean, Aurora, Peach, Midnight, Lime, Candy, Slate, Mono, Solid, Transparent, Mesh) + custom two-color gradient with angle + optional noise grain
 - Frames: None, Mac window, Windows window, Browser (editable URL), Phone bezel; frame color Auto (from screenshot brightness) / Light / Dark
-- Layout: padding 0–200, corner radius 0–48, shadow strength + offset, image scale 50–100%, tilt -15..15°, inset border 0–8 px with color, aspect ratio Auto / 16:9 / 4:3 / 1:1 / 4:5 / 9:16
+- Layout: padding 0–200, corner radius 0–48, shadow strength + offset, image scale 50–100%, tilt -15..15°, inset border 0–8 px with color, aspect ratio Auto / 16:9 / 4:3 / 1:1 / 4:5 / 9:16, platform sizes X / Twitter (1200×675), LinkedIn (1200×627) and Product Hunt (1270×760) that set the exact output size (the scene is scaled to fit)
 - Caption: title + subtitle above or below, font size, color, alignment
 - Download PNG (1x), Download JPG (q92), Copy to clipboard; shortcuts Ctrl/Cmd+S and Ctrl/Cmd+C (canvas focused)
 - 1 saved style preset; all settings persisted in `localStorage`
@@ -20,10 +20,11 @@ Turn plain screenshots into polished mockups: gradient / mesh / solid / transpar
 - No watermark
 - 2x and 4x PNG exports
 - 6 premium backgrounds (Nebula, Prism, Holo, Ember, Glacier, Velvet)
+- Image / wallpaper background (cover fit, blur 0–40; `ctx.filter` blur with a downscale fallback where unsupported). Free users can pick and preview it; download and copy open the Pro modal. The image is kept in memory only, never persisted or uploaded
 - Batch mode: drop many screenshots, same style applied to each, ZIP download (JSZip loaded lazily from jsDelivr)
 - Unlimited saved style presets
 
-Gates are enforced in `app.js` via `isPro()` / `Studio.gate()`; the UI listens to `pro:changed`.
+Gates are enforced in `app.js` via `isPro()` / `Studio.gate()` (`bgImageGate()` for the image background); the UI listens to `pro:changed`.
 
 ## Files
 

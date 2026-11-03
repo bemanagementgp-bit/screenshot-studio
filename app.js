@@ -29,13 +29,20 @@
     { id: 'ember', name: 'Ember', type: 'linear', colors: ['#1f0a0a', '#8b0000', '#ff6a00'], angle: 160, pro: true },
     { id: 'glacier', name: 'Glacier', type: 'linear', colors: ['#e0f7ff', '#9fd8ff', '#5aa9ff'], angle: 180, pro: true },
     { id: 'velvet', name: 'Velvet', type: 'mesh', base: '#2a0845', colors: ['#6441a5', '#ff3cac', '#2b86c5'], angle: 135, pro: true },
+    // user image / wallpaper: Pro, but free users may preview it (export & copy are gated)
+    { id: 'image', name: 'Image', type: 'image', colors: ['#18181b', '#18181b'], angle: 0, pro: true, preview: true },
     { id: 'custom', name: 'Custom', type: 'linear', colors: ['#ff7e5f', '#feb47b'], angle: 135 }
   ];
   const bgById = id => BG.find(b => b.id === id) || BG[0];
+  const lockedBg = b => !!b.pro && !b.preview && !isPro();   // tile cannot even be previewed
   const RATIOS = { '16:9': 16 / 9, '4:3': 4 / 3, '1:1': 1, '4:5': 4 / 5, '9:16': 9 / 16 };
+  // Named platform presets: exact output size at 1x (the scene is scaled to fit).
+  const SIZES = { x: [1200, 675], linkedin: [1200, 627], ph: [1270, 760] };
+  const CANVAS_FILTER = typeof CanvasRenderingContext2D !== 'undefined' && 'filter' in CanvasRenderingContext2D.prototype;
+  let bgImage = null;        // {img, name, thumb} background image (Pro), kept in memory only
 
   const DEF = {
-    bg: 'sunset', bgA: '#ff7e5f', bgB: '#feb47b', bgAngle: 135, noise: false,
+    bg: 'sunset', bgA: '#ff7e5f', bgB: '#feb47b', bgAngle: 135, bgBlur: 0, noise: false,
     frame: 'browser', frameTheme: 'auto', url: 'https://yourapp.com',
     pad: 64, radius: 14, shadow: 55, shadowY: 24, ratio: 'auto', scale: 100, tilt: 0, inset: 0, insetColor: '#ffffff',
     captionOn: false, title: '', subtitle: '', captionPos: 'above', fontSize: 36, textColor: '#ffffff', align: 'center'
@@ -43,8 +50,8 @@
   const S = Studio.restore(STATE_KEY, DEF);
   // Restored state / presets are untrusted (localStorage): enforce types, enums, ranges and lengths.
   const HEX = /^#[0-9a-f]{6}$/i;
-  const ENUMS = { frame: ['none', 'mac', 'win', 'browser', 'phone'], frameTheme: ['auto', 'light', 'dark'], ratio: ['auto', '16:9', '4:3', '1:1', '4:5', '9:16'], captionPos: ['above', 'below'], align: ['left', 'center', 'right'] };
-  const RANGES = { bgAngle: [0, 360], pad: [0, 200], radius: [0, 48], shadow: [0, 100], shadowY: [0, 80], scale: [50, 100], tilt: [-15, 15], inset: [0, 8], fontSize: [16, 96] };
+  const ENUMS = { frame: ['none', 'mac', 'win', 'browser', 'phone'], frameTheme: ['auto', 'light', 'dark'], ratio: ['auto', '16:9', '4:3', '1:1', '4:5', '9:16'].concat(Object.keys(SIZES)), captionPos: ['above', 'below'], align: ['left', 'center', 'right'] };
+  const RANGES = { bgAngle: [0, 360], bgBlur: [0, 40], pad: [0, 200], radius: [0, 48], shadow: [0, 100], shadowY: [0, 80], scale: [50, 100], tilt: [-15, 15], inset: [0, 8], fontSize: [16, 96] };
   function sanitizeState(o) {
     Object.keys(DEF).forEach(k => { if (typeof o[k] !== typeof DEF[k]) o[k] = DEF[k]; });
     ['bgA', 'bgB', 'insetColor', 'textColor'].forEach(k => { if (!HEX.test(o[k])) o[k] = DEF[k]; });
@@ -55,7 +62,8 @@
     return o;
   }
   sanitizeState(S);
-  if (!bgById(S.bg) || (bgById(S.bg).pro && !isPro())) S.bg = 'sunset';
+  // the background image is not persisted, so a restored 'image' background falls back too
+  if (!bgById(S.bg) || lockedBg(bgById(S.bg)) || (S.bg === 'image' && !bgImage)) S.bg = 'sunset';
 
   // ---------- images ----------
   let sampleImg = null;      // canvas with a fake app window
@@ -175,10 +183,14 @@
     const cap = captionMetrics(Math.max(bw, 360));
     const capH = cap ? cap.h + cap.gap : 0;
     let W = Math.ceil(bw + 2 * pad), H = Math.ceil(bh + 2 * pad + capH);
-    const r = RATIOS[S.ratio];
-    if (r) { if (W / H < r) W = Math.ceil(H * r); else H = Math.ceil(W / r); }
-    let f = 1; const mx = Math.max(W, H); if (mx > MAX_SIDE) f = MAX_SIDE / mx;
-    return { iw, ih, k, fr, cw, ch, bw, bh, W, H, f, outW: Math.max(1, Math.round(W * f)), outH: Math.max(1, Math.round(H * f)), cap, capH, pad, t };
+    const size = SIZES[S.ratio], r = size ? size[0] / size[1] : RATIOS[S.ratio];
+    // fixed sizes keep the exact ratio (no rounding) so the scaled scene fills every output pixel
+    if (r) { if (W / H < r) W = size ? H * r : Math.ceil(H * r); else H = size ? W / r : Math.ceil(W / r); }
+    let f = 1;
+    if (size) f = size[0] / W;
+    else { const mx = Math.max(W, H); if (mx > MAX_SIDE) f = MAX_SIDE / mx; }
+    const outW = size ? size[0] : Math.max(1, Math.round(W * f)), outH = size ? size[1] : Math.max(1, Math.round(H * f));
+    return { iw, ih, k, fr, cw, ch, bw, bh, W, H, f, outW, outH, fixed: !!size, cap, capH, pad, t };
   }
 
   // ---------- drawing ----------
@@ -203,12 +215,41 @@
     const b = bgById(S.bg);
     if (b.id === 'custom') return { type: 'linear', colors: [S.bgA, S.bgB], angle: S.bgAngle };
     if (b.id === 'solid') return { type: 'solid', colors: [S.bgA] };
+    if (b.id === 'image' && !bgImage) return BG[0];
     return b;
+  }
+  // Fallback blur where ctx.filter is unsupported (older Safari): shrink the cover crop in halving steps
+  // to a small canvas; drawing it back up with smoothing gives a soft, blur-like result.
+  function shrinkCrop(img, cv, w, h) {
+    let src = img, sx = cv.sx, sy = cv.sy, sw = cv.sw, sh = cv.sh;
+    while (sw / 2 > w * 1.5 && sh / 2 > h * 1.5) {
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(sw / 2)); c.height = Math.max(1, Math.round(sh / 2));
+      const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      src = c; sx = 0; sy = 0; sw = c.width; sh = c.height;
+    }
+    const out = document.createElement('canvas'); out.width = w; out.height = h;
+    const o = out.getContext('2d'); o.imageSmoothingQuality = 'high'; o.drawImage(src, sx, sy, sw, sh, 0, 0, w, h);
+    return out;
+  }
+  // Background image, cover-fit to w x h (design units). Blur scales with the canvas so it looks the same at any export size.
+  function drawImageBg(ctx, w, h) {
+    const img = bgImage.img, m = ctx.getTransform ? ctx.getTransform() : null, k = m ? Math.hypot(m.a, m.b) || 1 : 1;
+    const r = S.bgBlur * Math.max(w, h) / 1000;          // blur radius in design units
+    const grow = r * 2;                                    // draw past the edges so the blur has no faded fringe
+    const dw = w + grow * 2, dh = h + grow * 2, cv = Studio.cover(img.width, img.height, dw, dh);
+    ctx.save();
+    ctx.fillStyle = '#18181b'; ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    if (r > 0 && CANVAS_FILTER) { ctx.filter = `blur(${(r * k).toFixed(2)}px)`; ctx.drawImage(img, cv.sx, cv.sy, cv.sw, cv.sh, -grow, -grow, dw, dh); }
+    else if (r > 0) { const q = Math.max(1, r * k * 1.5); ctx.drawImage(shrinkCrop(img, cv, Math.max(1, Math.round(dw * k / q)), Math.max(1, Math.round(dh * k / q))), -grow, -grow, dw, dh); }
+    else ctx.drawImage(img, cv.sx, cv.sy, cv.sw, cv.sh, 0, 0, w, h);
+    ctx.restore();
   }
   function drawBackground(ctx, w, h, opaque) {
     const b = bgSpec();
     if (b.type === 'transparent') { if (opaque) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); } return; }
-    if (b.type === 'solid') { ctx.fillStyle = b.colors[0]; ctx.fillRect(0, 0, w, h); }
+    if (b.type === 'image') drawImageBg(ctx, w, h);
+    else if (b.type === 'solid') { ctx.fillStyle = b.colors[0]; ctx.fillRect(0, 0, w, h); }
     else if (b.type === 'linear') { ctx.fillStyle = linearGradient(ctx, w, h, b.angle, b.colors); ctx.fillRect(0, 0, w, h); }
     else if (b.type === 'mesh') {
       ctx.fillStyle = b.base; ctx.fillRect(0, 0, w, h);
@@ -342,13 +383,21 @@
     pctx.setTransform(1, 0, 0, 1, 0, 0); pctx.clearRect(0, 0, L.outW, L.outH);
     drawScene(pctx, L, item, false);
     if (!isPro()) { pctx.save(); pctx.globalAlpha = 0.6; Studio.watermark(pctx, L.outW, L.outH); pctx.restore(); }
-    $('sizeInfo').innerHTML = `Output: <b>${L.outW} × ${L.outH}</b>${L.f < 1 ? ' (capped at 4096)' : ''} · ${items.length ? items.length + ' screenshot' + (items.length > 1 ? 's' : '') : 'sample'}`;
+    $('sizeInfo').innerHTML = `Output: <b>${L.outW} × ${L.outH}</b>${L.f < 1 && !L.fixed ? ' (capped at 4096)' : ''} · ${items.length ? items.length + ' screenshot' + (items.length > 1 ? 's' : '') : 'sample'}`;
   }
   const render = Studio.raf(renderPreview);
   function update() { Studio.persist(STATE_KEY, S); render(); }
 
   // ---------- export ----------
+  // Image backgrounds can be previewed by everyone; downloading or copying them needs Pro.
+  function bgImageGate() {
+    if (bgSpec().type !== 'image' || isPro()) return true;
+    toast('Image backgrounds are a Pro feature');
+    return Studio.gate('bg-image');
+  }
+  function copyImage() { if (bgImageGate()) Studio.copyCanvas(preview); }
   function exportCurrent(opts) {
+    if (!bgImageGate()) return;
     const item = currentImage(); const L = computeLayout(item.img);
     let scale = opts.scale || 1;
     if (Math.max(L.outW, L.outH) * scale > 12000) { scale = Math.max(1, Math.floor(12000 / Math.max(L.outW, L.outH))); toast('Scaled down to ' + scale + 'x to stay inside browser canvas limits'); }
@@ -377,6 +426,7 @@
     if (b.id === 'solid') return S.bgA;
     if (b.type === 'linear') return `linear-gradient(${b.angle}deg, ${b.colors.join(', ')})`;
     if (b.type === 'mesh') return `radial-gradient(at 15% 20%, ${b.colors[0]}, transparent 60%), radial-gradient(at 85% 30%, ${b.colors[1]}, transparent 60%), radial-gradient(at 50% 95%, ${b.colors[2]}, transparent 60%), ${b.base}`;
+    if (b.type === 'image') return bgImage ? `center / cover no-repeat url("${bgImage.thumb}")` : 'var(--checker), var(--bg2)';
     return '';
   }
   function buildTiles() {
@@ -387,7 +437,8 @@
       const lab = document.createElement('span'); lab.textContent = b.name; t.appendChild(lab);
       if (b.pro) { const pb = document.createElement('span'); pb.className = 'pro-badge'; pb.textContent = 'PRO'; t.appendChild(pb); }
       t.addEventListener('click', () => {
-        if (b.pro && !isPro()) { openPro('bg-premium'); return; }
+        if (lockedBg(b)) { openPro('bg-premium'); return; }
+        if (b.type === 'image' && !bgImage) { $('bgFile').click(); return; }
         S.bg = b.id;
         if (b.type === 'linear' && b.id !== 'custom') { S.bgA = b.colors[0]; S.bgB = b.colors[b.colors.length - 1]; S.bgAngle = b.angle; syncBgInputs(); }
         track('bg_select', { id: b.id }); syncTiles(); update();
@@ -399,13 +450,32 @@
   function syncTiles() {
     $('bgTiles').querySelectorAll('.tile').forEach(t => {
       const b = bgById(t.dataset.id);
-      t.classList.toggle('active', t.dataset.id === S.bg); t.classList.toggle('locked', !!b.pro && !isPro());
+      t.classList.toggle('active', t.dataset.id === S.bg); t.classList.toggle('locked', lockedBg(b));
       t.setAttribute('aria-selected', t.dataset.id === S.bg ? 'true' : 'false');
       const pb = t.querySelector('.pro-badge'); if (pb) pb.classList.toggle('hidden', isPro());
-      if (b.id === 'custom' || b.id === 'solid') t.querySelector('.sw').style.background = swatchCSS(b);
+      if (b.id === 'custom' || b.id === 'solid' || b.id === 'image') t.querySelector('.sw').style.background = swatchCSS(b);
     });
+    $('bgImageRow').classList.toggle('hidden', S.bg !== 'image');
   }
   function syncBgInputs() { $('bgA').value = S.bgA; $('bgB').value = S.bgB; $('bgAngle').value = S.bgAngle; $('bgAngleV').textContent = S.bgAngle + '°'; }
+  async function pickBgImage(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { toast('Please drop an image file (PNG, JPG, WebP)'); return; }
+    let img;
+    try { if (file.size > 100 * 1024 * 1024) throw new Error('too large'); img = await Studio.readImage(file); }
+    catch (e) { toast('Could not read ' + file.name + (/heic|heif/i.test(file.name) ? ' (HEIC is not supported by browsers)' : '')); return; }
+    let thumb = '';
+    try {
+      const c = document.createElement('canvas'); c.width = 192; c.height = 120; const cv = Studio.cover(img.width, img.height, 192, 120);
+      c.getContext('2d').drawImage(img, cv.sx, cv.sy, cv.sw, cv.sh, 0, 0, 192, 120); thumb = c.toDataURL('image/jpeg', 0.8);
+    } catch (e) {}
+    if (bgImage && bgImage.img.close) bgImage.img.close();
+    bgImage = { img, name: file.name, thumb };
+    $('bgFileName').textContent = file.name; $('bgFileName').title = file.name;
+    S.bg = 'image';
+    track('bg_select', { id: 'image' }); syncTiles(); update();
+    if (!isPro()) toast('Image backgrounds are Pro. Preview freely, upgrade to export.');
+  }
 
   // ---------- UI: controls ----------
   function range(id, key, fmt, numeric) {
@@ -419,7 +489,7 @@
     sg.set(S[key]); return sg;
   }
   function syncFrameUI() { $('urlRow').classList.toggle('hidden', !(S.frame === 'browser' || S.frame === 'mac' || S.frame === 'win')); }
-  function setRatio(v) { S.ratio = v; $('ratioChips').querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.value === v)); }
+  function setRatio(v) { S.ratio = v; document.querySelectorAll('#ratioChips .chip, #sizeChips .chip').forEach(c => c.classList.toggle('active', c.dataset.value === v)); }
 
   // ---------- presets ----------
   const STYLE_KEYS = Object.keys(DEF).filter(k => !['title', 'subtitle', 'url'].includes(k));
@@ -450,7 +520,7 @@
   function applyPreset(style) {
     STYLE_KEYS.forEach(k => { if (Object.prototype.hasOwnProperty.call(style, k) && typeof style[k] === typeof DEF[k]) S[k] = style[k]; });
     sanitizeState(S);
-    if (bgById(S.bg).pro && !isPro()) S.bg = 'sunset';
+    if (lockedBg(bgById(S.bg)) || (S.bg === 'image' && !bgImage)) S.bg = 'sunset';
     syncAll(); update();
   }
   function savePreset() {
@@ -466,7 +536,7 @@
   function syncAll() {
     syncBgInputs(); syncTiles(); $('noise').checked = S.noise;
     segs.frame.set(S.frame); segs.theme.set(S.frameTheme); syncFrameUI(); $('urlText').value = S.url;
-    ['pad', 'radius', 'shadow', 'shadowY', 'scale', 'tilt', 'inset', 'fontSize'].forEach(k => { $(k).value = S[k]; $(k).dispatchEvent(new Event('input', { bubbles: false })); });
+    ['bgBlur', 'pad', 'radius', 'shadow', 'shadowY', 'scale', 'tilt', 'inset', 'fontSize'].forEach(k => { $(k).value = S[k]; $(k).dispatchEvent(new Event('input', { bubbles: false })); });
     $('insetColor').value = S.insetColor; setRatio(S.ratio);
     $('captionOn').checked = S.captionOn; $('title').value = S.title; $('subtitle').value = S.subtitle;
     segs.cap.set(S.captionPos); $('textColor').value = S.textColor; segs.align.set(S.align);
@@ -519,6 +589,9 @@
     $('bgB').addEventListener('input', () => { S.bgB = $('bgB').value; S.bg = 'custom'; syncTiles(); update(); });
     $('bgAngle').addEventListener('input', () => { S.bgAngle = Number($('bgAngle').value); $('bgAngleV').textContent = S.bgAngle + '°'; if (S.bg !== 'solid') S.bg = 'custom'; syncTiles(); update(); });
     $('noise').addEventListener('change', () => { S.noise = $('noise').checked; update(); });
+    $('bgPickBtn').addEventListener('click', () => $('bgFile').click());
+    $('bgFile').addEventListener('change', e => { pickBgImage(e.target.files[0]); e.target.value = ''; });
+    range('bgBlur', 'bgBlur');
 
     segs.frame = segCtl('frameSeg', 'frame', syncFrameUI);
     segs.theme = segCtl('frameTheme', 'frameTheme');
@@ -527,7 +600,7 @@
     range('pad', 'pad'); range('radius', 'radius'); range('shadow', 'shadow'); range('shadowY', 'shadowY');
     range('scale', 'scale', v => v + '%'); range('tilt', 'tilt', v => v + '°'); range('inset', 'inset');
     $('insetColor').addEventListener('input', () => { S.insetColor = $('insetColor').value; update(); });
-    $('ratioChips').querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { setRatio(c.dataset.value); update(); }));
+    document.querySelectorAll('#ratioChips .chip, #sizeChips .chip').forEach(c => c.addEventListener('click', () => { setRatio(c.dataset.value); update(); }));
 
     $('captionOn').addEventListener('change', () => { S.captionOn = $('captionOn').checked; if (S.captionOn && !S.title && !S.subtitle) { S.title = 'Introducing the new dashboard'; S.subtitle = 'Real-time analytics for your whole team'; $('title').value = S.title; $('subtitle').value = S.subtitle; } update(); });
     $('title').addEventListener('input', () => { S.title = $('title').value; if (!S.captionOn) { S.captionOn = true; $('captionOn').checked = true; } update(); });
@@ -552,7 +625,7 @@
     $('dlJpg').addEventListener('click', () => exportCurrent({ scale: 1, type: 'image/jpeg', quality: 0.92 }));
     $('dl2x').addEventListener('click', () => { if (Studio.gate('hires')) exportCurrent({ scale: 2 }); });
     $('dl4x').addEventListener('click', () => { if (Studio.gate('hires')) exportCurrent({ scale: 4 }); });
-    $('copyBtn').addEventListener('click', () => Studio.copyCanvas(preview));
+    $('copyBtn').addEventListener('click', copyImage);
     $('zipBtn').addEventListener('click', exportBatch);
     $('resetBtn').addEventListener('click', () => { Object.assign(S, DEF); syncAll(); update(); toast('Style reset'); });
 
@@ -560,13 +633,13 @@
       const mod = e.ctrlKey || e.metaKey; if (!mod) return;
       const tag = (document.activeElement && document.activeElement.tagName) || '';
       if (e.key.toLowerCase() === 's' && !/INPUT|TEXTAREA/.test(tag)) { e.preventDefault(); exportCurrent({ scale: 1 }); }
-      if (e.key.toLowerCase() === 'c' && document.activeElement === preview) { e.preventDefault(); Studio.copyCanvas(preview); }
+      if (e.key.toLowerCase() === 'c' && document.activeElement === preview) { e.preventDefault(); copyImage(); }
     });
 
     const refreshPro = () => {
       const pro = isPro();
       document.querySelectorAll('.studio-actions .pro-badge').forEach(b => b.classList.toggle('hidden', pro));
-      if (!pro && bgById(S.bg).pro) { S.bg = 'sunset'; }
+      if (!pro && lockedBg(bgById(S.bg))) { S.bg = 'sunset'; }
       syncTiles(); renderPresets(); render();
     };
     document.addEventListener('pro:changed', refreshPro);

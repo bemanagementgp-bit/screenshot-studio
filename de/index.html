@@ -142,6 +142,15 @@
         <summary>Hintergrund</summary>
         <div class="panel-body">
           <div class="tiles" id="bgTiles" role="listbox" aria-label="Hintergrund-Presets"></div>
+          <div class="bg-image hidden" id="bgImageRow">
+            <div class="src-row">
+              <button type="button" class="btn btn-sm" id="bgPickBtn">Bild auswählen…</button>
+              <span class="hint bg-file-name" id="bgFileName">Kein Bild ausgewählt</span>
+              <input type="file" id="bgFile" accept="image/*" class="hidden" aria-label="Hintergrundbild">
+            </div>
+            <div class="ctl"><label for="bgBlur">Unschärfe</label><input type="range" id="bgBlur" min="0" max="40" step="1" value="0"><span class="v" id="bgBlurV">0</span></div>
+            <p class="hint">Dein Foto oder Hintergrundbild füllt das ganze Canvas (randlos zugeschnitten). Es bleibt auf deinem Gerät.</p>
+          </div>
           <div class="custom-grad">
             <input type="color" id="bgA" value="#ff7e5f" aria-label="Verlaufs-Startfarbe" title="Startfarbe">
             <input type="color" id="bgB" value="#feb47b" aria-label="Verlaufs-Endfarbe" title="Endfarbe">
@@ -194,6 +203,12 @@
             <button type="button" class="chip" data-value="1:1">1:1</button>
             <button type="button" class="chip" data-value="4:5">4:5</button>
             <button type="button" class="chip" data-value="9:16">9:16</button>
+          </div>
+          <p class="sub-label">Plattformgröße</p>
+          <div class="chip-row" id="sizeChips" role="group" aria-label="Plattformgröße">
+            <button type="button" class="chip" data-value="x" title="1200 × 675 px">X / Twitter</button>
+            <button type="button" class="chip" data-value="linkedin" title="1200 × 627 px">LinkedIn</button>
+            <button type="button" class="chip" data-value="ph" title="1270 × 760 px">Product Hunt</button>
           </div>
         </div>
       </details>

@@ -593,5 +593,17 @@
   ", useSample); preview.addEventListener(": ", useSample); preview.addEventListener(",
   "; S.subtitle =": "; S.subtitle =",
   "; b.title = it.name; b.setAttribute(": "; b.title = it.name; b.setAttribute(",
-  "t freeze the tab. if (f.size > 100 * 1024 * 1024) { toast(": "t freeze the tab. if (f.size > 100 * 1024 * 1024) { toast("
+  "t freeze the tab. if (f.size > 100 * 1024 * 1024) { toast(": "t freeze the tab. if (f.size > 100 * 1024 * 1024) { toast(",
+  "Image": "Image",
+  "Choose image…": "Choisir une image…",
+  "No image chosen": "Aucune image choisie",
+  "Blur": "Flou",
+  "Your photo or wallpaper fills the canvas (cover fit). It stays on your device.": "Votre photo ou fond d'écran remplit tout le canevas (ajustement en couverture). Elle reste sur votre appareil.",
+  "Background image": "Image d'arrière-plan",
+  "Platform size": "Taille par plateforme",
+  "Image backgrounds are Pro. Preview freely, upgrade to export.": "Les arrière-plans image sont Pro : prévisualisez librement, passez à Pro pour exporter.",
+  "Image backgrounds are a Pro feature": "Les arrière-plans image sont une fonction Pro",
+  "X / Twitter": "X / Twitter",
+  "LinkedIn": "LinkedIn",
+  "Product Hunt": "Product Hunt"
 }
