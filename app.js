@@ -75,69 +75,40 @@
   function makeSample() {
     const w = 1280, h = 800, c = document.createElement('canvas'); c.width = w; c.height = h;
     const x = c.getContext('2d');
-    x.fillStyle = '#f6f7fb'; x.fillRect(0, 0, w, h);
-    // sidebar
-    x.fillStyle = '#111827'; x.fillRect(0, 0, 232, h);
-    x.fillStyle = '#f97316'; Studio.roundRect(x, 24, 26, 30, 30, 8); x.fill();
-    x.fillStyle = '#fff'; x.font = `700 17px ${FONT}`; x.fillText('Northwind', 64, 47);
-    const nav = ['Overview', 'Customers', 'Orders', 'Invoices', 'Reports', 'Settings'];
-    nav.forEach((n, i) => {
-      const y = 100 + i * 44;
-      if (i === 0) { x.fillStyle = 'rgba(255,255,255,.1)'; Studio.roundRect(x, 16, y - 26, 200, 38, 10); x.fill(); }
-      x.fillStyle = i === 0 ? '#fff' : 'rgba(255,255,255,.62)'; x.font = `500 14px ${FONT}`; x.fillText(n, 48, y);
-      x.fillStyle = i === 0 ? '#f97316' : 'rgba(255,255,255,.35)'; Studio.roundRect(x, 28, y - 12, 12, 12, 3); x.fill();
-    });
+    const box = (bx, by, bw, bh, r, color) => { x.fillStyle = color; Studio.roundRect(x, bx, by, bw, bh, r); x.fill(); };
+    x.fillStyle = '#f4f4f5'; x.fillRect(0, 0, w, h);
+    // sidebar with neutral menu lines
+    x.fillStyle = '#e4e4e7'; x.fillRect(0, 0, 232, h);
+    box(24, 26, 30, 30, 8, '#c4c6cd');
+    for (let i = 0; i < 6; i++) box(28, 92 + i * 44, i === 0 ? 168 : 120 + (i % 3) * 18, 12, 6, i === 0 ? '#a4a7b1' : '#cfd1d6');
     // top bar
     x.fillStyle = '#fff'; x.fillRect(232, 0, w - 232, 64);
-    x.fillStyle = '#e5e7eb'; x.fillRect(232, 64, w - 232, 1);
-    x.fillStyle = '#111827'; x.font = `700 20px ${FONT}`; x.fillText('Overview', 264, 40);
-    x.fillStyle = '#f3f4f6'; Studio.roundRect(x, 760, 18, 260, 30, 15); x.fill();
-    x.fillStyle = '#9ca3af'; x.font = `400 13px ${FONT}`; x.fillText('Search customers, orders…', 780, 38);
-    x.fillStyle = '#f97316'; Studio.roundRect(x, 1040, 18, 110, 30, 15); x.fill();
-    x.fillStyle = '#fff'; x.font = `600 13px ${FONT}`; x.fillText('+ New order', 1058, 38);
-    x.fillStyle = '#d1d5db'; x.beginPath(); x.arc(1200, 33, 16, 0, Math.PI * 2); x.fill();
-    // stat cards
-    const stats = [['Revenue', '$48,210', '+12.4%', '#16a34a'], ['Orders', '1,284', '+3.1%', '#16a34a'], ['Customers', '9,431', '+8.0%', '#16a34a'], ['Refunds', '$1,120', '-2.2%', '#dc2626']];
-    stats.forEach((s, i) => {
-      const cx = 264 + i * 250, cy = 96;
-      x.fillStyle = '#fff'; Studio.roundRect(x, cx, cy, 230, 104, 14); x.fill();
-      x.strokeStyle = '#e5e7eb'; x.lineWidth = 1; x.stroke();
-      x.fillStyle = '#6b7280'; x.font = `500 13px ${FONT}`; x.fillText(s[0], cx + 18, cy + 30);
-      x.fillStyle = '#111827'; x.font = `700 26px ${FONT}`; x.fillText(s[1], cx + 18, cy + 64);
-      x.fillStyle = s[3]; x.font = `600 12px ${FONT}`; x.fillText(s[2], cx + 18, cy + 88);
-    });
-    // chart card
-    x.fillStyle = '#fff'; Studio.roundRect(x, 264, 224, 620, 320, 14); x.fill(); x.strokeStyle = '#e5e7eb'; x.stroke();
-    x.fillStyle = '#111827'; x.font = `600 15px ${FONT}`; x.fillText('Revenue, last 12 months', 288, 256);
-    const bars = [32, 48, 40, 62, 55, 70, 66, 84, 78, 92, 88, 110];
-    bars.forEach((b, i) => {
-      const bx = 296 + i * 48, bh = b * 2.2;
-      x.fillStyle = i === bars.length - 1 ? '#f97316' : '#fed7aa'; Studio.roundRect(x, bx, 514 - bh, 30, bh, 6); x.fill();
-    });
-    x.strokeStyle = '#f3f4f6'; [300, 380, 460].forEach(gy => { x.beginPath(); x.moveTo(288, gy); x.lineTo(864, gy); x.stroke(); });
-    // right list card
-    x.fillStyle = '#fff'; Studio.roundRect(x, 904, 224, 340, 320, 14); x.fill(); x.strokeStyle = '#e5e7eb'; x.stroke();
-    x.fillStyle = '#111827'; x.font = `600 15px ${FONT}`; x.fillText('Recent orders', 928, 256);
-    const rows = [['Acme Corp', '$2,400', '#dcfce7', '#166534', 'Paid'], ['Globex', '$980', '#fef3c7', '#92400e', 'Pending'], ['Initech', '$4,120', '#dcfce7', '#166534', 'Paid'], ['Umbrella', '$640', '#fee2e2', '#991b1b', 'Failed'], ['Hooli', '$1,750', '#dcfce7', '#166534', 'Paid']];
-    rows.forEach((r, i) => {
-      const ry = 290 + i * 48;
-      x.fillStyle = '#e5e7eb'; x.beginPath(); x.arc(944, ry, 14, 0, Math.PI * 2); x.fill();
-      x.fillStyle = '#111827'; x.font = `500 14px ${FONT}`; x.fillText(r[0], 968, ry + 5);
-      x.fillStyle = '#6b7280'; x.font = `400 13px ${FONT}`; x.fillText(r[1], 1090, ry + 5);
-      x.fillStyle = r[2]; Studio.roundRect(x, 1160, ry - 11, 64, 22, 11); x.fill();
-      x.fillStyle = r[3]; x.font = `600 11px ${FONT}`; x.fillText(r[4], 1172, ry + 4);
-    });
-    // bottom table
-    x.fillStyle = '#fff'; Studio.roundRect(x, 264, 568, 980, 210, 14); x.fill(); x.strokeStyle = '#e5e7eb'; x.stroke();
-    x.fillStyle = '#111827'; x.font = `600 15px ${FONT}`; x.fillText('Top customers', 288, 600);
+    x.fillStyle = '#e4e4e7'; x.fillRect(232, 64, w - 232, 1);
+    box(264, 26, 160, 14, 7, '#c4c6cd');
+    box(760, 18, 260, 30, 15, '#f4f4f5');
+    box(1040, 18, 110, 30, 15, '#c4c6cd');
+    x.fillStyle = '#d4d4d8'; x.beginPath(); x.arc(1200, 33, 16, 0, Math.PI * 2); x.fill();
+    // cards
     for (let i = 0; i < 4; i++) {
-      const ty = 630 + i * 36;
-      x.fillStyle = '#f3f4f6'; x.fillRect(288, ty + 14, 932, 1);
-      x.fillStyle = '#e5e7eb'; Studio.roundRect(x, 288, ty - 6, 160 + (i % 2) * 40, 12, 6); x.fill();
-      Studio.roundRect(x, 620, ty - 6, 90, 12, 6); x.fill();
-      Studio.roundRect(x, 800, ty - 6, 120, 12, 6); x.fill();
-      x.fillStyle = '#fed7aa'; Studio.roundRect(x, 1040, ty - 6, 180 - i * 30, 12, 6); x.fill();
+      const cx = 264 + i * 250;
+      box(cx, 96, 230, 104, 14, '#fff');
+      box(cx + 18, 120, 80, 10, 5, '#d4d4d8');
+      box(cx + 18, 144, 120, 20, 6, '#b5b8c0');
     }
+    box(264, 224, 620, 320, 14, '#fff');
+    box(288, 248, 160, 12, 6, '#d4d4d8');
+    for (let i = 0; i < 12; i++) { const bh = 60 + ((i * 37) % 140); box(296 + i * 48, 514 - bh, 30, bh, 6, '#d4d4d8'); }
+    box(904, 224, 340, 320, 14, '#fff');
+    box(928, 248, 120, 12, 6, '#d4d4d8');
+    for (let i = 0; i < 5; i++) {
+      const ry = 290 + i * 48;
+      x.fillStyle = '#e4e4e7'; x.beginPath(); x.arc(944, ry, 14, 0, Math.PI * 2); x.fill();
+      box(968, ry - 6, 110, 12, 6, '#d4d4d8');
+      box(1160, ry - 10, 64, 20, 10, '#e4e4e7');
+    }
+    box(264, 568, 980, 210, 14, '#fff');
+    box(288, 592, 140, 12, 6, '#d4d4d8');
+    for (let i = 0; i < 4; i++) box(288, 630 + i * 36, 900 - (i % 2) * 220, 12, 6, '#ececef');
     return c;
   }
   function luminance(img) {
